@@ -1,9 +1,14 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"github.com/mattn/go-shellwords"
 	"github.com/mitchellh/cli"
+	"golang.org/x/crypto/ssh"
 	"log"
 	"ocpctl/internal/terminal"
 	"ocpctl/version"
@@ -111,6 +116,12 @@ func realMain() int {
 		return 1
 	}
 
+	//genSSHKey()
+	err = MakeSSHKeyPair("id_rsa", "id_rsa.pem")
+	if err != nil {
+		return 0
+	}
+
 	return exitCode
 }
 
@@ -147,4 +158,62 @@ func mergeEnvArgs(envName string, cmd string, args []string) ([]string, error) {
 	copy(newArgs[idx:], extra)
 	copy(newArgs[len(extra)+idx:], args[idx:])
 	return newArgs, nil
+}
+
+func genSSHKey() {
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return
+	}
+
+	privDer := x509.MarshalPKCS1PrivateKey(priv)
+	privBlock := pem.Block{
+		Type:    "RSA PRIVATE KEY",
+		Headers: nil,
+		Bytes:   privDer,
+	}
+	privPem := string(pem.EncodeToMemory(&privBlock))
+
+	pub := priv.PublicKey
+	pubDer, err := x509.MarshalPKIXPublicKey(&pub)
+	if err != nil {
+		return
+	}
+
+	pubBlock := pem.Block{
+		Type:    "PUBLIC KEY",
+		Headers: nil,
+		Bytes:   pubDer,
+	}
+	pubPem := string(pem.EncodeToMemory(&pubBlock))
+
+	fmt.Println(privPem)
+	fmt.Println(pubPem)
+
+}
+
+func MakeSSHKeyPair(pubKeyPath, privateKeyPath string) error {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
+	if err != nil {
+		return err
+	}
+
+	// generate and write private key as PEM
+	privateKeyFile, err := os.Create(privateKeyPath)
+	defer privateKeyFile.Close()
+	if err != nil {
+		fmt.Println("privateKey :: ", err)
+		return err
+	}
+	privateKeyPEM := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
+	if err := pem.Encode(privateKeyFile, privateKeyPEM); err != nil {
+		return err
+	}
+
+	// generate and write public key
+	pub, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(pubKeyPath, ssh.MarshalAuthorizedKey(pub), 0655)
 }
