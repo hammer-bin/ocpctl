@@ -5,6 +5,7 @@ import (
 	"github.com/mattn/go-shellwords"
 	"github.com/mitchellh/cli"
 	"log"
+	"ocpctl/internal/terminal"
 	"ocpctl/version"
 	"os"
 	"path/filepath"
@@ -43,6 +44,27 @@ func realMain() int {
 
 	log.Printf("[INFO] Container Platform Version %s", version.Version)
 
+	streams, err := terminal.Init()
+	if err != nil {
+		Ui.Error(fmt.Sprintf("Failed to configure the terminal: %s", err))
+		return 1
+	}
+	if streams.Stdout.IsTerminal() {
+		log.Printf("[TRACE] Stdout is a terminal of width %d", streams.Stdout.Columns())
+	} else {
+		log.Printf("[TRACE] Stdout is not a terminal")
+	}
+	if streams.Stderr.IsTerminal() {
+		log.Printf("[TRACE] Stderr is a terminal of width %d", streams.Stderr.Columns())
+	} else {
+		log.Printf("[TRACE] Stderr is not a terminal")
+	}
+	if streams.Stdin.IsTerminal() {
+		log.Printf("[TRACE] Stdin is a terminal")
+	} else {
+		log.Printf("[TRACE] Stdin is not a terminal")
+	}
+
 	// Get the command line args.
 	binName := filepath.Base(os.Args[0])
 	args := os.Args[1:]
@@ -55,9 +77,15 @@ func realMain() int {
 	}
 	fmt.Println(originalWd)
 
+	if Commands == nil {
+		//initCommand()
+	}
+
 	cliRunner := &cli.CLI{
+		Name:       binName,
 		Args:       args,
 		Commands:   Commands,
+		HelpFunc:   helpFunc,
 		HelpWriter: os.Stdout,
 	}
 
