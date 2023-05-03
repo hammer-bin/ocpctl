@@ -5,6 +5,7 @@ import (
 	"github.com/mattn/go-shellwords"
 	"github.com/mitchellh/cli"
 	"log"
+	"ocpctl/version"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,6 +40,8 @@ func main() {
 func realMain() int {
 
 	fmt.Println("Start ocpctl")
+
+	log.Printf("[INFO] Container Platform Version %s", version.Version)
 
 	// Get the command line args.
 	binName := filepath.Base(os.Args[0])
