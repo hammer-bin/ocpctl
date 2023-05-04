@@ -1,0 +1,3 @@
+master.ip=10.100.0.37
+username=ubuntu
+key.path=./os-new-cp-common-key.pem
