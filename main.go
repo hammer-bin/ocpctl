@@ -122,6 +122,9 @@ func realMain() int {
 		return 0
 	}
 
+	// go ssh session
+	//https://medium.com/@marcus.murray/go-ssh-client-shell-session-c4d40daa46cd
+
 	return exitCode
 }
 
